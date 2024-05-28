@@ -366,6 +366,10 @@ def collision_check(game, tilemap, new_player_x, new_player_y): #, allow_dash_bo
                                 game.player_vy = 0
                                 collided_y = True
                                 print('COLLIDED Top at ' + str(x) + ',' + str(y))
+                                if game.reverse_gravity:
+                                    game.player_state = STANDING
+                                    game.can_jump = True
+
                         
                         # Check for collision on the bottom
                         elif not collided_y and game.player_vy > 0: # and game.player_state != WALKING_DOWN and game.player_state != WALKING_UP:
@@ -391,23 +395,9 @@ def collision_check(game, tilemap, new_player_x, new_player_y): #, allow_dash_bo
     #    game.player_state = WALKING_DOWN
         #game.player_y += new_player_x - game.player_x
     #    collided_y = True
-
-
-    # check for collision with light pillar
-    if 'R' in game.collected_items.keys():
-        for x in range(tile_x - 2, tile_x + 3):
-            for y in range(tile_y - 3, tile_y + 3):
-                if in_map(x, y, tilemap):
-                    tile = tilemap[y][x]
-                    if tile.id == 'P':
-                        if (new_player_x - HALF_WIDTH//3 < tile.x + TILE_SIZE and
-                            new_player_x + HALF_WIDTH//3 > tile.x and
-                            new_player_y - HALF_HEIGHT < tile.y + TILE_SIZE and
-                            new_player_y + HALF_HEIGHT > tile.y): 
-                            # reverse gravity
-                            game.reverse_gravity = True
     
     
+
     # check for collision with gate
     if (game.current_room_x, game.current_room_y) in game.gate_open.keys() and not collided_x and game.player_vx != 0:
         gate_solid = False if game.gate_open[(game.current_room_x, game.current_room_y)] else True
@@ -446,7 +436,34 @@ def collision_check(game, tilemap, new_player_x, new_player_y): #, allow_dash_bo
     return collided_x, collided_y or collided_slope
 
         
-        
+ 
+def pillar_collision_check(game, tilemap, player_x, player_y):  
+    tile_x = int(player_x // TILE_SIZE)
+    tile_y = int(player_y // TILE_SIZE)
+    # check for collision with light pillar
+    if 'R' in game.collected_items.keys():
+        for x in range(tile_x - 2, tile_x + 3):
+            for y in range(tile_y - 3, tile_y + 3):
+                if in_map(x, y, tilemap):
+                    tile = tilemap[y][x]
+                    if tile.id == 'P':
+                        if (player_x - HALF_WIDTH//3 < tile.x + TILE_SIZE and
+                            player_x + HALF_WIDTH//3 > tile.x and
+                            player_y - HALF_HEIGHT < tile.y + TILE_SIZE and
+                            player_y + HALF_HEIGHT > tile.y): 
+                            # reverse gravity
+                            game.reverse_gravity = True
+                            return
+    
+    game.reverse_gravity = False
+    
+'''    
+from functools import partial
+
+in_map_func = partial(in_map, tilemap)
+if any(in_map_func(x, y) and tilemap[y][x].is_item() for x in range(tile_x - 1, tile_x + 2) for y in range(tile_y - 2, tile_y + 2)):
+    # Handle collision
+    pass  ''' 
     
 async def item_collision_check(game, tilemap, new_player_x, new_player_y): 
     if not game.item_in_room:
@@ -467,7 +484,7 @@ async def item_collision_check(game, tilemap, new_player_x, new_player_y):
                         new_player_y + HALF_HEIGHT > tile.y):
                         
                         # show message
-                        await show_message(screen, "Obtained " + item_title(tile.id))
+                        await show_message(screen, f"Obtained {item_title(tile.id)}")
                         
                         # Add item and erase from screen
                         game.collected.add((game.current_room_x, game.current_room_y, x, y))  # Add the item's coordinates to the collected set
@@ -479,6 +496,7 @@ async def item_collision_check(game, tilemap, new_player_x, new_player_y):
                         item_id = tile.id
                         tile.id = 0
                         game.item_in_room = False
+                        game.fading_message_counter = 850
                         
                         redraw_room(tilemap, (game.current_room_x,game.current_room_y), game.collected_items, game.gate_y_offset, game.item_in_room)
                         return item_id

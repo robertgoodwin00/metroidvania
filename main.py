@@ -51,6 +51,20 @@ def cancel():
     redraw_room(tilemap, (game.current_room_x,game.current_room_y), game.collected_items, game.gate_y_offset, game.item_in_room)
 
 
+def toggle_music(play = False):
+    if game.music_on and not play:
+        pygame.mixer.music.stop()
+        game.music_on = False
+    else:
+        music_path = "Words_be.mid"
+        pygame.mixer.music.load(music_path)
+        try:
+            pygame.mixer.music.play(-1)
+            game.music_on = True
+        except:
+            print('cant load music')
+            game.music_on = False
+
 def initialize_game(save_progress = False):
     global game
     
@@ -62,6 +76,7 @@ def initialize_game(save_progress = False):
     load_tilemap(game.current_room_x, game.current_room_y)
     enter_room(game.current_room_x, game.current_room_y)
    
+    toggle_music(True)
    
 def enter_room(x, y):
     # Update the current room
@@ -110,7 +125,10 @@ async def main():
                     
                 #elif event.key == pygame.K_x:
                 #    game.fading_message = "you should eat your cornflakes, dude"
-                    
+                 
+                elif event.key == MUSIC_KEY:
+                    toggle_music()
+                 
                 elif game.player_state != DEAD and game.player_state != HIT and game.player_state != DASH:
                     
                     if event.key == DIE_KEY:  
@@ -128,8 +146,8 @@ async def main():
                     # dash
                     elif event.key == DASH_KEY:
                         if 'D' in game.collected_items.keys():
-                            if (game.player_state != JUMPING or 'A' in game.collected_items.keys()) and \
-                             (game.player_state != HOVER or 'A' in game.collected_items.keys()):
+                            if ((game.player_state != JUMPING and game.player_state != HOVER) or \
+                             'A' in game.collected_items.keys()):
                                 game.air_dash = True if game.player_state == JUMPING else False
                                 game.player_state = DASH
                                 game.player_vx = game.player_facing * DASH_VELOCITY
@@ -209,7 +227,7 @@ async def main():
             if keys[JUMP_KEY] and game.player_state != DASH:
                 # initiate jump
                 if game.can_jump:
-                    game.player_vy = -JUMP_VELOCITY
+                    game.player_vy = JUMP_VELOCITY if game.reverse_gravity else -JUMP_VELOCITY
                     game.can_jump = False
                     game.player_state = JUMPING
                     game.player_animation_index = 0
@@ -336,7 +354,9 @@ async def main():
                 print('switch to falling')
             game.player_state = JUMPING
             game.hovering = False
-            
+            game.can_jump = False
+        elif game.player_vy > 0:
+            game.can_jump = False
             
 
         
@@ -465,9 +485,12 @@ async def main():
 
 
 
-        game.reverse_gravity = False
-        # do collision check                      
+        
+        # do collision check   
+        
         collided_x, collided_y = collision_check(game, tilemap, new_player_x, new_player_y)
+        
+        
         # do collision check with item
         item_id = await item_collision_check(game, tilemap, new_player_x, new_player_y)
         if item_id != "":
@@ -478,16 +501,17 @@ async def main():
         if not collided_y:
             game.player_y = new_player_y
             
+            pillar_collision_check(game, tilemap, game.player_x, game.player_y)
             # gravity
-            if True: #game.player_state != WALKING_UP and game.player_state != WALKING_DOWN:
-                if game.reverse_gravity:
-                    game.player_vy -= GRAVITY
-                    if game.player_vy < -MAX_FALL_VELOCITY:
-                        game.player_vy = -MAX_FALL_VELOCITY
-                else:
-                    game.player_vy += GRAVITY
-                    if game.player_vy > MAX_FALL_VELOCITY:
-                        game.player_vy = MAX_FALL_VELOCITY
+            #if True: #game.player_state != WALKING_UP and game.player_state != WALKING_DOWN:
+            if game.reverse_gravity:
+                game.player_vy -= GRAVITY
+                if game.player_vy < -MAX_FALL_VELOCITY:
+                    game.player_vy = -MAX_FALL_VELOCITY
+            else:
+                game.player_vy += GRAVITY
+                if game.player_vy > MAX_FALL_VELOCITY:
+                    game.player_vy = MAX_FALL_VELOCITY
             
 
         

@@ -15,8 +15,9 @@ ROOM_WIDTH, ROOM_HEIGHT = 30, 20  # how many tiles across and down in a room
 TILE_SIZE = 32
 TILE_COLOR = (19,69,139)
 #PLAYER_RADIUS = TILE_SIZE // 2
-#STARTING_ROOM_X, STARTING_ROOM_Y = 100,99
-STARTING_ROOM_X, STARTING_ROOM_Y = 100,98
+CHEATS_ON = False
+STARTING_ROOM_X, STARTING_ROOM_Y = 100,99
+#STARTING_ROOM_X, STARTING_ROOM_Y = 1,1
 STARTING_X, STARTING_Y = 400, 200  # TILE_SIZE*2, TILE_SIZE*4
 JUMP_VELOCITY = 7   #5.5
 GRAVITY = .25
@@ -37,7 +38,7 @@ player_hit_animation_speed = 6
 player_dash_animation_speed = 5
 player_stomp_animation_speed = 5
 player_hover_animation_speed = 13
-transition_speed = 14 
+transition_speed = 13 
 EXPLOSION_COUNTER_LIMIT = 24
 EXPLOSION_ANIMATION_SPEED = 2
 
@@ -51,9 +52,10 @@ HOVER_KEY = pygame.K_h
 JUMP_KEY = pygame.K_SPACE
 RESTART_KEY = pygame.K_r
 DIE_KEY = pygame.K_F1
+MUSIC_KEY = pygame.K_m
 
 
-CHEATS_ON = False
+
 
 
 # player states
@@ -252,6 +254,7 @@ class Game:
         self.gate_open[(99,98)] = False
         self.gate_open[(103,96)] = False
         self.gate_open[(101,98)] = False
+        self.gate_open[(99,99)] = False
         self.animate_gate = False
         self.gate_y_offset = 0
         
@@ -270,11 +273,9 @@ class Game:
             self.collected_items['R'] = 1
             self.collected_items['K'] = 1
             self.collected_items['A'] = 1
-        self.collected_items['D'] = 1
-        self.collected_items['H'] = 1
-        self.collected_items['S'] = 1
-        self.collected_items['R'] = 1
-        self.collected_items['A'] = 1
+
+        self.music_on = False
+
 
     def reset_some_stuff(self):
         self.player_x, self.player_y = STARTING_X, STARTING_Y  
@@ -292,9 +293,7 @@ class Game:
         
 
 def in_map(x, y, tilemap):
-    if x >= 0 and y >= 0 and x < len(tilemap[0]) and y < len(tilemap):
-        return True
-    return False
+    return 0 <= x < len(tilemap[0]) and 0 <= y < len(tilemap)
 
 
 def item_title(id):
